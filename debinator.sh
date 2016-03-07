@@ -55,7 +55,7 @@ main()
 		mkdir -p debinator
 		cd debinator
 		download $1
-		extract $1 $2
+		extract $1 $dest
 		shift
 	done
 }
