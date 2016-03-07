@@ -85,6 +85,7 @@ class Package(object):
         self._filename = None
         self._direct_dependencies = []
         self._direct_dependencies_packages = []
+        self.users = set()
         for line in block:
             if (line.startswith("Package:")):
                 self._parse_package_line(line)
@@ -108,7 +109,10 @@ class Package(object):
             if ('|' in raw_dep):
                 # not sure how to handle | in dependencies ...
                 raw_dep = raw_dep.split('|')[0]
-            dependencies.append(raw_dep.strip(' '))
+            raw_dep = raw_dep.strip(' ')
+            excluded = False
+            if (not excluded):
+                dependencies.append(raw_dep)
         return dependencies
 
     def _parse_filename_line(self, line):
@@ -119,6 +123,7 @@ class Package(object):
         for dependency in self._direct_dependencies:
             package = database.load_package(dependency)
             self._direct_dependencies_packages.append(package)
+            package.users.add(self)
 
     @property
     def dependencies(self):
@@ -136,13 +141,82 @@ class Package(object):
 
 
 def main():
-    database = Database("Packages", "http://ftp.debian.org/debian/")
+    exclude = set(
+        ["libgl1-mesa-*",
+         "libx11*",
+         "cdparanoia",
+         "abcde",
+         "asunder",
+         "bashburn",
+         "crip",
+         "jack",
+         "k3b*",
+         "morituri",
+         "ripit",
+         "ripperx",
+         "yaret",
+         "gtk+2.0",
+         "libwayland*",
+         "libjack*",
+         "libfreetype*",
+         "libudev",
+         "libldap*",
+         "libcairo*",
+         "libasound*",
+         "libpango*",
+         "libopenal*",
+         "libegl1*",
+         "libdvdnav*",
+         "libflac*",
+         "libgtk*",
+         "libsoundtouch*",
+         "libgtk*",
+         "libgme*",
+         "libxmu*",
+         "libopencv-highgui*",
+         "libfluidsynth*",
+         "libflite*",
+         "libcdparanoia*",
+         "libglu*",
+         "librsvg*",
+         "libmjpegutils*",
+         "libkate*",
+         "libmodplug*",
+         "libass*",
+         "libmms*",
+         "libmpeg2encpp*",
+         "libvo-aacenc*",
+         "libnettle*",
+         "libopus*",
+         "libopenexr*",
+         "libwildmidi*",
+         "libdvdread*",
+         "libzbar*",
+         "libschroedinger*",
+         "libmpg*",
+         "libpng*",
+         "libwebp*",
+         "libchromaprint*",
+         "libmplex*",
+         "libmimic*",
+         "libgsm*",
+         "libfaad*",
+         "libvo-amrwbenc*",
+         "libofa*",
+         "libspandsp*",
+         "libsbc*",
+         "libdca*",
+         "libilmbase*",
+    ])
+    database = Database(
+        "Packages",
+        "http://ftp.debian.org/debian/",
+        )
     # package = database.load_package_with_dependencies("v4l-utils")
-    package = database.load_package_with_dependencies("gstreamer1.0-plugins-bad")
+    package = database.load_package_with_dependencies(
+        "gstreamer1.0-plugins-bad")
     if (package is None):
         return
-    # database.load_package("v4l-utils")
-    # print "\n".join(database.extract_url_of_all_visited_packages())
     print database.url + package.filename
     all_deps = set()
     new_deps = package.dependencies
@@ -151,8 +225,36 @@ def main():
         new_deps = []
         for dep in deps:
             if (dep not in all_deps):
-                all_deps.add(dep)
-                new_deps += dep.dependencies
+                excluded = False
+                debug = False
+                # if (dep.name.startswith('libx11')):
+                    # debug = True
+                    # print dep.name
+                for exclusion in exclude:
+                    if (exclusion.endswith('*')):
+                        exclusion = exclusion[:-1]
+                        if (debug):
+                            print >>sys.stderr, "\texclusion (*):", exclusion
+                        if (dep.name.startswith(exclusion)):
+                            print >>sys.stderr, "Excluded (" + dep.name + \
+                                ") because of '" + exclusion + \
+                                "*' possibly used by: " + \
+                                ", ".join([x.name for x in dep.users])
+                            excluded = True
+                            break
+                    else:
+                        if (debug):
+                            print sys.stderr, "\texclusion:", exclusion
+                        if (exclusion == dep.name):
+                            print sys.stderr, "Excluded (" + dep.name + \
+                                ") because of '" + exclusion + \
+                                "' possibly used by: " + \
+                                ", ".join([x.name for x in dep.users])
+                            excluded = True
+                            break
+                if (not excluded):
+                    all_deps.add(dep)
+                    new_deps += dep.dependencies
     print "\n".join([database.url + x.filename for x in all_deps])
 
 if ('__main__' == __name__):
