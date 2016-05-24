@@ -56,7 +56,7 @@ class Database(object):
                 package.link_dependencies(self)
                 self._examined.add(package.name)
                 new_dependencies = package.dependencies
-                if (new_dependencies):
+                while (new_dependencies):
                     dependencies = new_dependencies
                     new_dependencies = []
                     for dependency in dependencies:
