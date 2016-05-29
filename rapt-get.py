@@ -1,5 +1,5 @@
 import sys
-
+import argparse
 
 class Database(object):
 
@@ -56,7 +56,7 @@ class Database(object):
                 package.link_dependencies(self)
                 self._examined.add(package.name)
                 new_dependencies = package.dependencies
-                if (new_dependencies):
+                while (new_dependencies):
                     dependencies = new_dependencies
                     new_dependencies = []
                     for dependency in dependencies:
@@ -141,85 +141,105 @@ class Package(object):
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        nargs='*',
+        dest='packages',
+        default=[],
+        help='Name(s) of the package(s)')
+    args = parser.parse_args()
     exclude = set(
-        ["libgl1-mesa-*",
-         "libx11*",
-         "cdparanoia",
-         "abcde",
-         "asunder",
-         "bashburn",
-         "crip",
-         "jack",
-         "k3b*",
-         "morituri",
-         "ripit",
-         "ripperx",
-         "yaret",
-         "gtk+2.0",
-         "libwayland*",
-         "libjack*",
-         "libfreetype*",
-         "libudev",
-         "libldap*",
-         "libcairo*",
-         "libasound*",
-         "libpango*",
-         "libopenal*",
-         "libegl1*",
-         "libdvdnav*",
-         "libflac*",
-         "libgtk*",
-         "libsoundtouch*",
-         "libgtk*",
-         "libgme*",
-         "libxmu*",
-         "libopencv-highgui*",
-         "libfluidsynth*",
-         "libflite*",
-         "libcdparanoia*",
-         "libglu*",
-         "librsvg*",
-         "libmjpegutils*",
-         "libkate*",
-         "libmodplug*",
-         "libass*",
-         "libmms*",
-         "libmpeg2encpp*",
-         "libvo-aacenc*",
-         "libnettle*",
-         "libopus*",
-         "libopenexr*",
-         "libwildmidi*",
-         "libdvdread*",
-         "libzbar*",
-         "libschroedinger*",
-         "libmpg*",
-         "libpng*",
-         "libwebp*",
-         "libchromaprint*",
-         "libmplex*",
-         "libmimic*",
-         "libgsm*",
-         "libfaad*",
-         "libvo-amrwbenc*",
-         "libofa*",
-         "libspandsp*",
-         "libsbc*",
-         "libdca*",
-         "libilmbase*",
+        [
+            #"libc6",
+            #"lsb-base*",
+            #"libpopt*",
+            #"base-files*",
+#         "libgl1-mesa-*",
+#         "libx11*",
+#         "cdparanoia",
+#         "abcde",
+#         "asunder",
+#         "bashburn",
+#         "crip",
+#         "jack",
+#         "k3b*",
+#         "morituri",
+#         "ripit",
+#         "ripperx",
+#         "yaret",
+#         "gtk+2.0",
+#         "libwayland*",
+#         "libjack*",
+#         "libfreetype*",
+#         "libudev",
+#         "libldap*",
+#         "libcairo*",
+#         "libasound*",
+#         "libpango*",
+#         "libopenal*",
+#         "libegl1*",
+#         "libdvdnav*",
+#         "libflac*",
+#         "libgtk*",
+#         "libsoundtouch*",
+#         "libgtk*",
+#         "libgme*",
+#         "libxmu*",
+#         "libopencv-highgui*",
+#         "libfluidsynth*",
+#         "libflite*",
+#         "libcdparanoia*",
+#         "libglu*",
+#         "librsvg*",
+#         "libmjpegutils*",
+#         "libkate*",
+#         "libmodplug*",
+#         "libass*",
+#         "libmms*",
+#         "libmpeg2encpp*",
+#         "libvo-aacenc*",
+#         "libnettle*",
+#         "libopus*",
+#         "libopenexr*",
+#         "libwildmidi*",
+#         "libdvdread*",
+#         "libzbar*",
+#         "libschroedinger*",
+#         "libmpg*",
+#         "libpng*",
+#         "libwebp*",
+#         "libchromaprint*",
+#         "libmplex*",
+#         "libmimic*",
+#         "libgsm*",
+#         "libfaad*",
+#         "libvo-amrwbenc*",
+#         "libofa*",
+#         "libspandsp*",
+#         "libsbc*",
+#         "libdca*",
+#         "libilmbase*",
     ])
     database = Database(
         "Packages",
         "http://ftp.debian.org/debian/",
         )
     # package = database.load_package_with_dependencies("v4l-utils")
-    package = database.load_package_with_dependencies(
-        "gstreamer1.0-plugins-bad")
-    if (package is None):
-        return
-    print database.url + package.filename
+    new_deps = []
+    seen_packages_names = set()
+    for package_name in args.packages:
+        if (package_name in seen_packages_names):
+            continue
+        else:
+            seen_packages_names.add(package_name)
+        package = database.load_package_with_dependencies(
+            package_name)
+        if (package is None):
+            print >>sys.stderr, "Package (" + package_name + ") not found."
+            continue
+        print database.url + package.filename
+        new_deps.extend(package.dependencies)
     all_deps = set()
-    new_deps = package.dependencies
     while (new_deps):
         deps = new_deps
         new_deps = []
@@ -244,9 +264,9 @@ def main():
                             break
                     else:
                         if (debug):
-                            print sys.stderr, "\texclusion:", exclusion
+                            print >>sys.stderr, "\texclusion:", exclusion
                         if (exclusion == dep.name):
-                            print sys.stderr, "Excluded (" + dep.name + \
+                            print >>sys.stderr, "Excluded (" + dep.name + \
                                 ") because of '" + exclusion + \
                                 "' possibly used by: " + \
                                 ", ".join([x.name for x in dep.users])
