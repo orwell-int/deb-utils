@@ -23,23 +23,31 @@ extract()
 		mkdir "$folder"
 		cd "$folder"
 		ar vx ../$archive
-		sub_folder=$PWD
 		if [ -e "data.tar.xz" ] ; then
 			xz -d data.tar.xz
 			is_gz=
 		else
 			is_gz=1
 		fi
-		cd $dest
-		if [ -z "$is_gz" ] ; then
-			tar xf "$sub_folder/data.tar"
-		else
-			tar xzf "$sub_folder/data.tar.gz"
-		fi
-		echo "Files extracted for '$1'." >&2
 	else
-		echo "Nothing extracted for '$1' because '$dir/$folder' already exists." >&2
+		cd $folder
+		if [ -e "data.tar" ] ; then
+			is_gz=
+		else
+			is_gz=1
+		fi
 	fi
+	sub_folder=$PWD
+	cd $dest
+	if [ -z "$is_gz" ] ; then
+		tar xf "$sub_folder/data.tar"
+	else
+		tar xzf "$sub_folder/data.tar.gz"
+	fi
+	echo "Files extracted for '$1'." >&2
+	#else
+	#	echo "Nothing extracted for '$1' because '$dir/$folder' already exists." >&2
+	#fi
 }
 
 main()
