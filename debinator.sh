@@ -8,9 +8,11 @@
 download()
 {
 	archive=${1##*/}
+	result=0
 	if [ ! -e "$archive" ] ; then
-		wget -N -q $1
+		wget -N -q $1 || result=1
 	fi
+	return $result
 }
 
 extract()
@@ -63,7 +65,12 @@ main()
 		mkdir -p debinator
 		cd debinator
 		download $1
-		extract $1 $dest
+		result=$?
+		if [ $result -eq 0 ] ; then
+			extract $1 $dest
+		else
+			echo "Failed to get file: $1" >&2
+		fi
 		shift
 	done
 }
