@@ -12,18 +12,18 @@ main()
 		exit 1
 	fi
 	dest=$1
-    if [ "." = "$(dirname $dest)" ] ; then
-        dest=$PWD/$dest
-    fi
-    if [ -e $dest ] ; then
-        echo "File '$dest' already exists." >&2
-        exit 1
-    fi
+	if [ "." = "$(dirname $dest)" ] ; then
+		dest=$PWD/$dest
+	fi
+	if [ -e $dest ] ; then
+		echo "File '$dest' already exists." >&2
+		exit 1
+	fi
 	shift
-    temp_folder=$(mktemp -d)
-    python rapt-get.py $* | xargs ./debinator.sh $temp_folder
-    cd $temp_folder
-    tar czf $dest *
+	temp_folder=$(mktemp -d)
+	python rapt-get.py $* | xargs ./debinator.sh $temp_folder
+	cd $temp_folder
+	tar czf $dest *
 }
 
 main $*
